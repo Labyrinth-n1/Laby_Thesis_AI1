@@ -48,7 +48,7 @@ const Inscription: React.FC = () => {
     const audioPath = uploadData.path;
 
     const { error } = await supabase
-      .from('Utilisateur')
+      .from('tilisateur')
       .insert([{ nom, profil, audio_path: audioPath }]);
 
     if (error) return alert('Erreur création utilisateur : ' + error.message);
