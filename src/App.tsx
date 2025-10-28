@@ -11,7 +11,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Inscription />} />
         <Route path="/confirmation" element={<Confirmation />} />
-        <Route path="/connection" element={<Login />} />
+        <Route path="/connexion" element={<Login />} />
         <Route path="/home" element={<Home />} />
       </Routes>
     </Router>

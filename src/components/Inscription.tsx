@@ -139,6 +139,7 @@ const Inscription: React.FC = () => {
         {audioBlob && <p>✅ Audio prêt à être envoyé !</p>}
 
         <button type="submit">S'inscrire</button>
+        <a href="/connexion">Connexion</a>
       </form>
     </div>
   );
