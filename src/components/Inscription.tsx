@@ -140,6 +140,7 @@ const Inscription: React.FC = () => {
 
         <button type="submit">S'inscrire</button>
         <a href="/connexion">Connexion</a>
+
       </form>
     </div>
   );
