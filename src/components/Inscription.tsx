@@ -9,10 +9,10 @@ const Inscription: React.FC = () => {
   const [password, setPassword] = useState<string>('');
   const [recording, setRecording] = useState<boolean>(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [message, setMessage] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
+  // 🎙️ Démarrer l’enregistrement
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -24,7 +24,6 @@ const Inscription: React.FC = () => {
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/mp3' });
         setAudioBlob(blob);
-        mediaRecorder.stream.getTracks().forEach(track => track.stop());
       };
 
       mediaRecorder.start();
@@ -45,48 +44,38 @@ const Inscription: React.FC = () => {
     e.preventDefault();
 
     if (!audioBlob) {
-      return alert('Enregistrez un audio avant de soumettre !');
+      alert('Enregistre un audio avant de soumettre !');
+      return;
     }
 
-    // 1️⃣ Création de l'utilisateur via Supabase Auth
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: 'https://labythesisai1-xyhn--5173--1db57326.local-corp.webcontainer.io/confirmation',
-      },
-    });
+    // Upload de l’audio vers Supabase Storage
+    const fileName = `user-audio/${nom}_${prenom}.mp3`;
+    const { data: uploadData, error: uploadError } = await supabase
+      .storage
+      .from('audio-files')
+      .upload(fileName, audioBlob, { upsert: true });
 
-    if (signUpError) {
-      return alert('Erreur création utilisateur : ' + signUpError.message);
-    }
+    if (uploadError) return alert('Erreur upload audio : ' + uploadError.message);
 
-    // 2️⃣ Stockage temporaire des infos et de l'audio
-    try {
-      // Stocke l’audio dans Supabase Storage avec un nom temporaire basé sur l’email
-      const fileName = `pending-audio/${email}_${Date.now()}.mp3`;
-      const { error: uploadError } = await supabase
-        .storage
-        .from('audio-files')
-        .upload(fileName, audioBlob, { upsert: true });
+    const audioPath = uploadData?.path || '';
 
-      if (uploadError) throw uploadError;
+    // Insertion des données utilisateur
+    const { error } = await supabase
+      .from('utilisateur')
+      .insert([
+        {
+          nom,
+          prenom,
+          email,
+          profil,
+          password, // ⚠️ version non hashée (pour tests seulement)
+          audio_path: audioPath,
+        },
+      ]);
 
-      // Stocke les infos restantes dans Storage (JSON)
-      const info = { nom, prenom, profil, email, audio_path: fileName };
-      const { error: infoError } = await supabase
-        .storage
-        .from('pending-info')
-        .upload(`pending-json/${email}.json`, new Blob([JSON.stringify(info)], { type: 'application/json' }), { upsert: true });
+    if (error) return alert('Erreur création utilisateur : ' + error.message);
 
-      if (infoError) throw infoError;
-
-      setMessage('Merci ! Veuillez confirmer votre email pour finaliser l’inscription.');
-    } catch (err: any) {
-      alert('Erreur stockage temporaire : ' + err.message);
-    }
-
-    // Reset formulaire côté UI
+    alert('Utilisateur créé avec succès !');
     setNom('');
     setPrenom('');
     setEmail('');
@@ -98,17 +87,53 @@ const Inscription: React.FC = () => {
   return (
     <div>
       <h2>Inscription</h2>
-      {message && <p style={{ color: 'green' }}>{message}</p>}
       <form onSubmit={handleSubmit}>
-        <input type="text" placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required />
-        <input type="text" placeholder="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} required />
-        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-        <input type="text" placeholder="Profil" value={profil} onChange={e => setProfil(e.target.value)} />
-        <input type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
+        <input
+          type="text"
+          placeholder="Nom"
+          value={nom}
+          onChange={e => setNom(e.target.value)}
+          required
+        />
+        <input
+          type="text"
+          placeholder="Prénom"
+          value={prenom}
+          onChange={e => setPrenom(e.target.value)}
+          required
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="text"
+          placeholder="Profil"
+          value={profil}
+          onChange={e => setProfil(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Mot de passe"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+        />
 
         <div>
-          {!recording && <button type="button" onClick={startRecording}>Démarrer l'enregistrement</button>}
-          {recording && <button type="button" onClick={stopRecording}>⏹️ Arrêter</button>}
+          {!recording && (
+            <button type="button" onClick={startRecording}>
+              🎤 Démarrer l'enregistrement
+            </button>
+          )}
+          {recording && (
+            <button type="button" onClick={stopRecording}>
+              ⏹️ Arrêter
+            </button>
+          )}
         </div>
 
         {audioBlob && <p>✅ Audio prêt à être envoyé !</p>}

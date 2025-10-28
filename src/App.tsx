@@ -1,12 +1,20 @@
-import React from 'react';
+// App.tsx
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Inscription from './components/Inscription';
+import Confirmation from './components/Confirmation';
+import Home from './components/Home.tsx';
+import Login from './components/Connexion.tsx';
 
-const App: React.FC = () => {
+function App() {
   return (
-    <div className="App">
-      <h1>Projet Réunion Audio</h1>
-      <Inscription />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Inscription />} />
+        <Route path="/confirmation" element={<Confirmation />} />
+        <Route path="/connection" element={<Login />} />
+        <Route path="/home" element={<Home />} />
+      </Routes>
+    </Router>
   );
 }
 
